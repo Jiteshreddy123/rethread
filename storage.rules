@@ -1,0 +1,30 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Item photographs: Public read, authenticated users can upload under 5MB images
+    match /item_images/{itemId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isImageFile() && isUnder5MB();
+    }
+
+    // User profile avatars
+    match /user_avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && request.auth.uid == userId && isImageFile() && isUnder5MB();
+    }
+  }
+}
